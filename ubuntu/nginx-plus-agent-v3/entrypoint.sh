@@ -32,19 +32,6 @@ wait_workers()
 
 wait_workers
 
-# Launch nginx app protect WAF
-echo "starting nginx app protect waf ..."
-/opt/app_protect/bin/bd_agent &
-/usr/share/ts/bin/bd-socket-plugin tmm_count 4 proc_cpuinfo_cpu_mhz 2000000 total_xml_memory 471859200 total_umu_max_size 3129344 sys_max_account_id 1024 no_static_config 2>&1 >> /var/log/app_protect/bd-socket-plugin.log &
-
-while [ ! -e /opt/app_protect/pipe/app_protect_plugin_socket ] || [ ! -e /opt/app_protect/pipe/ts_agent_pipe ]
-do
-  echo "wait for nginx app protect WAF ready..."
-  sleep 1
-done
-chown :nginx-agent /opt/app_protect/pipe/*
-
-
 # Launch nginx-agent
 sg nginx-agent "/usr/bin/nginx-agent" &
 echo "nginx-agent started"
@@ -64,16 +51,6 @@ wait_term()
     # stopping nginx-agent ...
     kill -QUIT "${agent_pid}" 2>/dev/null
     echo "$(date +%H:%M:%S:%N): nginx-agent stopped..."
-    # unregister - start
-#    echo "UNREGISTER instance from NMS"
-#    export ENV_CONTROLLER_USER=${ENV_CONTROLLER_USER}
-#    export ENV_CONTROLLER_PASSWORD=${ENV_CONTROLLER_PASSWORD}
-#    export ENV_CONTROLLER_HOST=${ENV_CONTROLLER_HOST}
-#    export ENV_CONTROLLER_INSTANCE_GROUP=${ENV_CONTROLLER_INSTANCE_GROUP}
-#    sleep 60
-#    sh remove.sh
-#    echo "UNREGISTER done"
-    # unregister - end
 }
 
 wait_term

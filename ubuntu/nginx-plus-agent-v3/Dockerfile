@@ -139,7 +139,6 @@ RUN ln -sf /dev/stdout /var/log/nginx/access.log \
   && chown -R :nginx-agent /var/log/
 
 COPY entrypoint.sh /
-COPY remove.sh /
 
 # App services
 EXPOSE 8000
