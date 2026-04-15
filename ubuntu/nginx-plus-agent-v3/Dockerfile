@@ -44,19 +44,27 @@ RUN  apt-get update \
 # Install Lua package to make http request
 RUN luarocks install lua-resty-http
 
-# Get other files required for NGINX installation
-RUN wget -q -O - http://nginx.org/keys/nginx_signing.key | apt-key add -
-RUN wget -q -O /etc/apt/apt.conf.d/90nginx https://cs.nginx.com/static/files/90nginx
-RUN printf "deb https://plus-pkgs.nginx.com/ubuntu `lsb_release -cs` nginx-plus\n" >/etc/apt/sources.list.d/nginx-plus.list
+# Import the NGINX signing key
+RUN wget -qO - https://cs.nginx.com/static/keys/nginx_signing.key \
+        | gpg --dearmor \
+        | tee /usr/share/keyrings/nginx-archive-keyring.gpg > /dev/null
+
+# Add the NGINX Plus apt repository
+RUN printf "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] \
+https://pkgs.nginx.com/plus/ubuntu $(lsb_release -cs) nginx-plus\n" \
+        | tee /etc/apt/sources.list.d/nginx-plus.list
+
+# Download the nginx-plus apt client config
+RUN wget -qO /etc/apt/apt.conf.d/90pkgs-nginx \
+        https://cs.nginx.com/static/files/90pkgs-nginx
 
 # Update the repository and install the most recent version of the NGINX Plus
 RUN --mount=type=secret,id=nginx-crt,dst=/etc/ssl/nginx/nginx-repo.crt,mode=0644 \
     --mount=type=secret,id=nginx-key,dst=/etc/ssl/nginx/nginx-repo.key,mode=0644 \
     apt-get update \
-    && apt-get install -y nginx-plus
-
-# Install the Lua module package nginx-plus-module-lua from the official NGINX Plus
-RUN apt install nginx-plus-module-lua
+    && apt-get install -y \
+    nginx-plus \
+    nginx-plus-module-lua
 
 # Remove any previous NGINX Plus repository and apt configuration files:
 RUN rm /etc/apt/sources.list.d/nginx-plus.list \
@@ -89,8 +97,7 @@ RUN mkdir -p /nginx-initial-config
 COPY nginx.conf /nginx-initial-config/
 
 # Add NGINX User to nginx-agent Group
-RUN groupadd nginx-agent \
-    && usermod -a -G nginx-agent nginx \
+RUN usermod -a -G nginx-agent nginx \
     && usermod -a -G nginx-agent root
 
 RUN cp /etc/nginx/uwsgi_params /nginx-initial-config/ \
