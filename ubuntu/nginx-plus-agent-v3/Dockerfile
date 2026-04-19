@@ -44,6 +44,7 @@ RUN  apt-get update \
 # Install Lua package to make http request and to manipulate strings
 RUN luarocks install lua-resty-http
 RUN luarocks install lua-resty-string
+RUN luarocks install lua-resty-openssl
 
 # Import the NGINX signing key
 RUN wget -qO - https://cs.nginx.com/static/keys/nginx_signing.key \
